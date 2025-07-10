@@ -23,7 +23,6 @@
             justify-content: center; /* 垂直居中所有內容 */
             padding: 5px; /* 減少 padding 給棋盤更多空間 */
             box-sizing: border-box; /* 確保 padding 不會導致內容溢出 */
-            /* UPDATED: 更改為沙場土黃色背景 */
             background-image: url('https://placehold.co/1920x1080/D2B48C'); 
             background-size: cover;
             background-position: center;
@@ -107,7 +106,6 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            /* UPDATED: 棋盤尺寸放大到 100vmin */
             width: 100vmin; 
             height: 100vmin;
             max-width: 95vh; /* 在寬螢幕上限制最大高度 */
@@ -281,17 +279,18 @@
         <div id="startScreen" class="start-screen">
             <h1>藍氏五子棋</h1>
             <div class="difficulty-options">
+                <!-- UPDATED: 更改難度名稱 -->
                 <label class="difficulty-option">
                     <input type="radio" name="startDifficulty" value="beginner" checked>
-                    新手
+                    棋童
                 </label>
                 <label class="difficulty-option">
                     <input type="radio" name="startDifficulty" value="intermediate">
-                    中手
+                    棋師
                 </label>
                 <label class="difficulty-option">
                     <input type="radio" name="startDifficulty" value="master">
-                    高手
+                    棋王
                 </label>
             </div>
             <button id="startGameBtn" class="start-button">開始遊戲</button>
@@ -315,12 +314,21 @@
             </div>
         </div>
         
-        <!-- NEW: 悔棋確認框 -->
+        <!-- 悔棋確認框 -->
         <div id="undoConfirmBox" class="modal-overlay">
             <p id="undoMessageText"></p>
             <div class="modal-buttons">
                 <button id="undoConfirmBtn" class="modal-btn modal-btn-confirm">時光倒流</button>
                 <button id="undoCancelBtn" class="modal-btn modal-btn-cancel">讓我想想</button>
+            </div>
+        </div>
+
+        <!-- NEW: 重新開始確認框 -->
+        <div id="restartConfirmBox" class="modal-overlay">
+            <p>確定要放棄此局，另起新局嗎？</p>
+            <div class="modal-buttons">
+                <button id="restartConfirmBtn" class="modal-btn modal-btn-confirm">確認</button>
+                <button id="restartCancelBtn" class="modal-btn modal-btn-cancel">取消</button>
             </div>
         </div>
 
@@ -353,8 +361,9 @@
         let startScreen, startGameBtn, startDifficultyRadios, mainGameTitle;
         let restartBtn, undoBtn;
         let messageBox, messageText, messageBoxOkBtn;
-        // NEW: 悔棋確認框的 UI 元素
         let undoConfirmBox, undoMessageText, undoConfirmBtn, undoCancelBtn;
+        // NEW: 重新開始確認框的 UI 元素
+        let restartConfirmBox, restartConfirmBtn, restartCancelBtn;
         let aiThinkingIndicator, fireworksContainer;
 
         // --- 音訊與動畫 ---
@@ -549,6 +558,7 @@
             }
         }
 
+        // UPDATED: showMessage and its callback logic
         function showMessage(msg) {
             messageText.textContent = msg;
             messageBox.style.display = 'block';
@@ -556,7 +566,7 @@
                 messageBox.style.display = 'none';
                 if (msg.includes('恭喜')) {
                     startFireworks();
-                    setTimeout(initGameToStartScreen, 3000);
+                    setTimeout(initGameToStartScreen, 5000); // Wait for fireworks to finish
                 } else {
                     initGameToStartScreen();
                 }
@@ -811,7 +821,6 @@
             }
         }
         
-        // NEW: 實際執行悔棋的函數
         function performUndo() {
             if (moveHistory.length < 2) return;
 
@@ -830,7 +839,6 @@
             drawBoard();
         }
 
-        // UPDATED: 悔棋按鈕處理函數
         function handleUndoClick() {
             if (undoCount <= 0 || currentPlayer === AI_PLAYER || aiThinking) {
                 showMessage('將軍，現在無法悔棋！');
@@ -848,6 +856,11 @@
             ];
             undoMessageText.textContent = mockingMessages[Math.floor(Math.random() * mockingMessages.length)];
             undoConfirmBox.style.display = 'block';
+        }
+        
+        // NEW: 重新開始按鈕處理函數
+        function handleRestartClick() {
+            restartConfirmBox.style.display = 'block';
         }
 
         // --- 音效與特效 ---
@@ -897,12 +910,26 @@
             }
             firework.onanimationend = () => firework.remove();
         }
-
+        
+        // UPDATED: 煙火特效增強
         function startFireworks() {
             fireworksContainer.innerHTML = '';
-            for (let i = 0; i < 5; i++) {
-                createFirework(Math.random() * window.innerWidth, Math.random() * window.innerHeight * 0.7);
-            }
+            const duration = 5000; // 持續 5 秒
+            const interval = 250; // 每 250 毫秒發射一波
+            let elapsed = 0;
+
+            const intervalId = setInterval(() => {
+                const burstSize = Math.floor(Math.random() * 5) + 3; // 每波 3 到 7 個煙火
+                for (let i = 0; i < burstSize; i++) {
+                    const x = Math.random() * window.innerWidth;
+                    const y = Math.random() * window.innerHeight * 0.7;
+                    createFirework(x, y);
+                }
+                elapsed += interval;
+                if (elapsed >= duration) {
+                    clearInterval(intervalId);
+                }
+            }, interval);
         }
 
         // --- 初始化與事件監聽 ---
@@ -964,26 +991,37 @@
             messageBoxOkBtn = document.getElementById('messageBoxOkBtn');
             aiThinkingIndicator = document.getElementById('aiThinkingIndicator');
             fireworksContainer = document.getElementById('fireworksContainer');
-            // NEW: 獲取悔棋確認框元素
             undoConfirmBox = document.getElementById('undoConfirmBox');
             undoMessageText = document.getElementById('undoMessageText');
             undoConfirmBtn = document.getElementById('undoConfirmBtn');
             undoCancelBtn = document.getElementById('undoCancelBtn');
+            // NEW: 獲取重新開始確認框元素
+            restartConfirmBox = document.getElementById('restartConfirmBox');
+            restartConfirmBtn = document.getElementById('restartConfirmBtn');
+            restartCancelBtn = document.getElementById('restartCancelBtn');
             
             initAudio();
 
             if (!eventListenersAdded) {
-                restartBtn.addEventListener('click', initGameToStartScreen);
-                // UPDATED: 悔棋按鈕綁定新的處理函數
+                // UPDATED: 重新開始按鈕綁定新的處理函數
+                restartBtn.addEventListener('click', handleRestartClick);
                 undoBtn.addEventListener('click', handleUndoClick);
                 
-                // NEW: 悔棋確認框按鈕事件
                 undoConfirmBtn.addEventListener('click', () => {
                     performUndo();
                     undoConfirmBox.style.display = 'none';
                 });
                 undoCancelBtn.addEventListener('click', () => {
                     undoConfirmBox.style.display = 'none';
+                });
+
+                // NEW: 重新開始確認框按鈕事件
+                restartConfirmBtn.addEventListener('click', () => {
+                    restartConfirmBox.style.display = 'none';
+                    initGameToStartScreen();
+                });
+                restartCancelBtn.addEventListener('click', () => {
+                    restartConfirmBox.style.display = 'none';
                 });
 
                 startGameBtn.addEventListener('click', () => {
