@@ -279,7 +279,6 @@
         <div id="startScreen" class="start-screen">
             <h1>藍氏五子棋</h1>
             <div class="difficulty-options">
-                <!-- UPDATED: 更改難度名稱 -->
                 <label class="difficulty-option">
                     <input type="radio" name="startDifficulty" value="beginner" checked>
                     棋童
@@ -291,6 +290,11 @@
                 <label class="difficulty-option">
                     <input type="radio" name="startDifficulty" value="master">
                     棋王
+                </label>
+                <!-- NEW: 新增棋聖難度 -->
+                <label class="difficulty-option">
+                    <input type="radio" name="startDifficulty" value="saint">
+                    棋聖
                 </label>
             </div>
             <button id="startGameBtn" class="start-button">開始遊戲</button>
@@ -323,7 +327,7 @@
             </div>
         </div>
 
-        <!-- NEW: 重新開始確認框 -->
+        <!-- 重新開始確認框 -->
         <div id="restartConfirmBox" class="modal-overlay">
             <p>確定要放棄此局，另起新局嗎？</p>
             <div class="modal-buttons">
@@ -362,7 +366,6 @@
         let restartBtn, undoBtn;
         let messageBox, messageText, messageBoxOkBtn;
         let undoConfirmBox, undoMessageText, undoConfirmBtn, undoCancelBtn;
-        // NEW: 重新開始確認框的 UI 元素
         let restartConfirmBox, restartConfirmBtn, restartCancelBtn;
         let aiThinkingIndicator, fireworksContainer;
 
@@ -558,7 +561,6 @@
             }
         }
 
-        // UPDATED: showMessage and its callback logic
         function showMessage(msg) {
             messageText.textContent = msg;
             messageBox.style.display = 'block';
@@ -717,6 +719,7 @@
             }
         }
 
+        // UPDATED: findBestAIMove to include 'saint' difficulty
         function findBestAIMove() {
             return new Promise(resolve => {
                 aiThinking = true;
@@ -746,6 +749,7 @@
                     if (difficulty === 'beginner') searchDepth = 0;
                     else if (difficulty === 'intermediate') searchDepth = 1;
                     else if (difficulty === 'master') searchDepth = 2;
+                    else if (difficulty === 'saint') searchDepth = 3; // NEW: 棋聖難度
                     else searchDepth = 1;
 
                     if (difficulty === 'beginner') {
@@ -858,7 +862,6 @@
             undoConfirmBox.style.display = 'block';
         }
         
-        // NEW: 重新開始按鈕處理函數
         function handleRestartClick() {
             restartConfirmBox.style.display = 'block';
         }
@@ -911,7 +914,6 @@
             firework.onanimationend = () => firework.remove();
         }
         
-        // UPDATED: 煙火特效增強
         function startFireworks() {
             fireworksContainer.innerHTML = '';
             const duration = 5000; // 持續 5 秒
@@ -995,7 +997,6 @@
             undoMessageText = document.getElementById('undoMessageText');
             undoConfirmBtn = document.getElementById('undoConfirmBtn');
             undoCancelBtn = document.getElementById('undoCancelBtn');
-            // NEW: 獲取重新開始確認框元素
             restartConfirmBox = document.getElementById('restartConfirmBox');
             restartConfirmBtn = document.getElementById('restartConfirmBtn');
             restartCancelBtn = document.getElementById('restartCancelBtn');
@@ -1003,7 +1004,6 @@
             initAudio();
 
             if (!eventListenersAdded) {
-                // UPDATED: 重新開始按鈕綁定新的處理函數
                 restartBtn.addEventListener('click', handleRestartClick);
                 undoBtn.addEventListener('click', handleUndoClick);
                 
@@ -1015,7 +1015,6 @@
                     undoConfirmBox.style.display = 'none';
                 });
 
-                // NEW: 重新開始確認框按鈕事件
                 restartConfirmBtn.addEventListener('click', () => {
                     restartConfirmBox.style.display = 'none';
                     initGameToStartScreen();
