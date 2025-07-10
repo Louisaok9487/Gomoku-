@@ -291,7 +291,6 @@
                     <input type="radio" name="startDifficulty" value="master">
                     棋王
                 </label>
-                <!-- NEW: 新增棋聖難度 -->
                 <label class="difficulty-option">
                     <input type="radio" name="startDifficulty" value="saint">
                     棋聖
@@ -584,16 +583,20 @@
         const AI_PLAYER = 2;
         const HUMAN_PLAYER = 1;
 
-        function getPrunedMoves(board) {
+        // UPDATED: 啟發式剪枝，可自訂掃描半徑
+        function getPrunedMoves(board, radius = 1) { // 預設半徑為 1
             const moveSet = new Set();
             const keys = Object.keys(board);
 
-            if (keys.length === 0) return [{ row: 7, col: 7 }];
+            if (keys.length === 0) {
+                return [{ row: 7, col: 7 }];
+            }
 
             for (const key of keys) {
                 const [row, col] = key.split(',').map(Number);
-                for (let dr = -1; dr <= 1; dr++) {
-                    for (let dc = -1; dc <= 1; dc++) {
+                // 檢查周圍指定半徑內的點
+                for (let dr = -radius; dr <= radius; dr++) {
+                    for (let dc = -radius; dc <= radius; dc++) {
                         if (dr === 0 && dc === 0) continue;
                         const r = row + dr;
                         const c = col + dc;
@@ -604,13 +607,17 @@
                 }
             }
             
-            if (moveSet.size === 0) return [];
+            if (moveSet.size === 0) {
+                 // 如果剪枝後沒有可選的點（例如棋子分散），則返回所有空點
+                 return getAllGridCoords().filter(({ row, col }) => !board[`${row},${col}`]);
+            }
 
             return Array.from(moveSet).map(key => {
                 const [row, col] = key.split(',').map(Number);
                 return { row, col };
             });
         }
+
 
         function evaluateBoard(board, player) {
             let score = 0;
@@ -689,7 +696,8 @@
             const aiWins = checkWin(null, null, AI_PLAYER, currentBoard);
             if (aiWins) return 100000 - depth;
 
-            const availableMoves = getPrunedMoves(currentBoard);
+            // 遞迴時使用預設半徑 1
+            const availableMoves = getPrunedMoves(currentBoard); 
             if (availableMoves.length === 0 || depth === 0) {
                 return evaluateBoard(currentBoard, AI_PLAYER);
             }
@@ -719,7 +727,6 @@
             }
         }
 
-        // UPDATED: findBestAIMove to include 'saint' difficulty
         function findBestAIMove() {
             return new Promise(resolve => {
                 aiThinking = true;
@@ -733,7 +740,28 @@
                     let bestMove = null;
                     let bestValue = -Infinity;
                     
-                    const availableMoves = getPrunedMoves(boardState);
+                    // 根據難度決定搜尋深度和初始掃描半徑
+                    let searchDepth;
+                    let pruneRadius;
+                    if (difficulty === 'beginner') {
+                        searchDepth = 0;
+                        pruneRadius = 1;
+                    } else if (difficulty === 'intermediate') {
+                        searchDepth = 1;
+                        pruneRadius = 1;
+                    } else if (difficulty === 'master') {
+                        searchDepth = 2;
+                        pruneRadius = 1;
+                    } else if (difficulty === 'saint') {
+                        searchDepth = 3; 
+                        pruneRadius = 2; // 棋聖使用更大的初始掃描半徑
+                    } else {
+                        searchDepth = 1;
+                        pruneRadius = 1;
+                    }
+                    
+                    // 使用指定的半徑獲取第一層的候選著法
+                    const availableMoves = getPrunedMoves(boardState, pruneRadius);
 
                     if (availableMoves.length === 0) {
                         aiThinking = false;
@@ -745,13 +773,6 @@
                     
                     bestMove = availableMoves[0]; 
 
-                    let searchDepth;
-                    if (difficulty === 'beginner') searchDepth = 0;
-                    else if (difficulty === 'intermediate') searchDepth = 1;
-                    else if (difficulty === 'master') searchDepth = 2;
-                    else if (difficulty === 'saint') searchDepth = 3; // NEW: 棋聖難度
-                    else searchDepth = 1;
-
                     if (difficulty === 'beginner') {
                         bestMove = availableMoves[Math.floor(Math.random() * availableMoves.length)];
                     } else {
@@ -762,6 +783,7 @@
                             }
                             const newBoard = { ...boardState };
                             newBoard[`${move.row},${move.col}`] = AI_PLAYER;
+                            // minimax 內部遞迴時，仍使用預設半徑 1 的 getPrunedMoves
                             const value = minimax(newBoard, searchDepth - 1, false, -Infinity, Infinity);
                             if (value > bestValue) {
                                 bestValue = value;
